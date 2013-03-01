@@ -1,0 +1,30 @@
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;script src="javascripts/cordova.js"&gt;&lt;/script&gt;
+  &lt;script&gt;
+    function cameraOnSuccess(imageURI) {
+      console.log(imageURI);
+      var image = document.querySelector('img#myImage');
+      image.src = imageURI;
+    }
+
+    function cameraOnFailure(message) {
+      alert("Camera error: " + message);
+    }
+
+    function cameraGetPicture() {
+      navigator.camera.getPicture(cameraOnSuccess, cameraOnFailure, { quality: 50,
+        destinationType: Camera.DestinationType.FILE_URI
+        });
+    }
+  &lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;button ontouchstart="cameraGetPicture()"&gt;Grab a picture&lt;/button&gt;&lt;br&gt;&lt;br&gt;
+
+  &lt;hr&gt;
+  &lt;img id="myImage" width="304"&gt;&lt;/img&gt;
+&lt;/body&gt;
+&lt;/html&gt;

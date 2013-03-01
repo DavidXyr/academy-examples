@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="javascripts/cordova.js"></script>
+  <script>
+    function cameraOnSuccess(imageURI) {
+      console.log(imageURI);
+      var image = document.querySelector('img#myImage');
+      image.src = imageURI;
+    }
+
+    function cameraOnFailure(message) {
+      alert("Camera error: " + message);
+    }
+
+    function cameraGetPicture() {
+      navigator.camera.getPicture(cameraOnSuccess, cameraOnFailure, { quality: 50,
+        destinationType: Camera.DestinationType.FILE_URI
+        });
+    }
+  </script>
+</head>
+<body>
+  <button ontouchstart="cameraGetPicture()">Grab a picture</button><br><br>
+
+  <hr>
+  <img id="myImage" width="300"></img>
+</body>
+</html>
