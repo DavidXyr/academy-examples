@@ -1,9 +1,9 @@
-&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-  &lt;meta charset="utf-8"&gt;
-  &lt;script src="javascripts/cordova.js"&gt;&lt;/script&gt;
-  &lt;script&gt;
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="javascripts/cordova.js"></script>
+  <script>
     function cameraOnSuccess(imageURI) {
       console.log(imageURI);
       var image = document.querySelector('img#myImage');
@@ -19,12 +19,12 @@
         destinationType: Camera.DestinationType.FILE_URI
         });
     }
-  &lt;/script&gt;
-&lt;/head&gt;
-&lt;body&gt;
-  &lt;button ontouchstart="cameraGetPicture()"&gt;Grab a picture&lt;/button&gt;&lt;br&gt;&lt;br&gt;
+  </script>
+</head>
+<body>
+  <button ontouchstart="cameraGetPicture()">Grab a picture</button><br><br>
 
-  &lt;hr&gt;
-  &lt;img id="myImage" width="304"&gt;&lt;/img&gt;
-&lt;/body&gt;
-&lt;/html&gt;
+  <hr>
+  <img id="myImage" width="304"></img>
+</body>
+</html>
