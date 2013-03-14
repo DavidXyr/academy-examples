@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="javascripts/cordova.js"></script>
+  <script src="components/steroids-js/steroids.js"></script>
+  <script type="text/javascript">
+    function showCat() {
+      var webView = new steroids.views.WebView("showCat.html");
+      steroids.layers.push(webView);
+    }
+
+    function showCatNoNavBar() {
+      var webView = new steroids.views.WebView("showCat.html");
+      steroids.layers.push( {
+        view: webView,
+        navigationBar: false
+      } );
+    }
+
+    function showCatWithAnimation() {
+      var webView = new steroids.views.WebView("showCat.html");
+      steroids.layers.push( {
+        view: webView,
+        animation: {
+          transition: "curlUp",
+          duration: 1.2,
+          reversedTransition: "curlDown",
+          reversedDuration: 1.2
+        }
+      } );
+    }
+
+    function previewDolanImage() {
+      var webView = new steroids.views.PreviewFileView("images/dolan.png");
+      steroids.modal.show(webView);
+    }
+  </script>
+</head>
+<body>
+  <button ontouchstart="showCat()">Open showCat.html</button>
+  <br><br>
+  <button ontouchstart="showCatNoNavBar()">Open showCat.html and hide the navigation bar</button>
+  <br><br>
+  <button ontouchstart="showCatWithAnimation()">Open showCat.html with custom animation</button>
+  <br><br>
+  <button ontouchstart="previewDolanImage()">Preview dolan.png</button>
+</body>
+</html>
+
