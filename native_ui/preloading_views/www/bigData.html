@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="javascripts/cordova.js"></script>
+  <script src="components/steroids-js/steroids.js"></script>
+  <script type="text/javascript">
+
+    setTimeout(function() {
+      var loading = document.getElementById("loading");
+      var content = document.getElementById("content");
+      loading.style.display = "none";
+      content.style.display = "inline";
+    }, 4000);
+  </script>
+</head>
+<body>
+  <h2 id="loading">LOADING...</h2>
+  <h2 id="content" style="display:none;">Your content is ready!</h2>
+</body>
+</html>

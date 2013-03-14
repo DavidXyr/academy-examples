@@ -1,0 +1,7 @@
+{
+  "name": "Academy Lesson 4.5. - Preloading views",
+  "version": "0.0.1",
+  "dependencies": {
+    "steroids-js": "git://github.com/steroidsjs/steroids-js.git#0.3.x"
+  }
+}
