@@ -1,9 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <script src="javascripts/cordova.js"></script>
-  <script src="components/steroids-js/steroids.js"></script>
+  <meta charset="utf8">
+  <title>My Steroids App</title>
+
+  <link rel="stylesheet" href="/stylesheets/ratchet-steroids.css" />
+  <link rel="stylesheet" href="/stylesheets/application.css" />
+
+  <script src="/javascripts/onerror.js"></script>
+
+  <script src="/appgyver/cordova.js"></script>
+  <script src="/components/steroids-js/steroids.js"></script>
+
+  <script src="/javascripts/application.js"></script>
+</head>
+<body>
+  
   <script type="text/javascript">
     var curlUp = new steroids.Animation( {
       transition: "curlUp",
@@ -19,7 +31,7 @@
         }, {
           onSuccess: function() {
             times++;
-            document.getElementById("status").innerHTML = "Animation performed " + times + " times!";
+            document.getElementById("status").textContent = "Animation performed " + times + " times!";
           },
           onFailure: function() {
             alert("Animation failed to start! :(");
@@ -28,9 +40,11 @@
       );
     }
   </script>
-</head>
-<body>
-  <h1><span id="status">Waiting...</span></h1>
-  <button ontouchstart="performAnim(curlUp)">Perform curl up animation</button>
+  
+  <div class="content-padded">
+    <h1><span id="status">Waiting...</span></h1>
+    <a class="button" ontouchstart="performAnim(curlUp)">Perform curl up animation</a>
+  </div>
+  
 </body>
 </html>
