@@ -1,11 +1,14 @@
 <script>
-  initIndex();
+  CatsController.index();
 </script>
 
-<h1>Please pick a cat</h1>
-
-<button ontouchstart="showCatWithId('1')">Show cat 1</button>
-<br><br>
-<button ontouchstart="showCatWithId('2')">Show cat 2</button>
-<br><br>
-<button ontouchstart="showCatWithId('3')">Show cat 3</button>
+<ul class="list">
+  <li class="opensLayer" data-location="/views/cats/show.html?id=1">
+    Show first cats
+    <span class="chevron"></span>
+  </li>
+  <li class="opensLayer" data-location="/views/cats/show.html?id=2">
+    Show second cats
+    <span class="chevron"></span>
+  </li>
+</ul>

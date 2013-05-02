@@ -1,17 +1,20 @@
-function initIndex() {
-  document.addEventListener("deviceready", function() {
-    steroids.view.navigationBar.show("Cats index");
-  });
-}
+window.CatsController = {
 
-function initShow() {
-  document.addEventListener("deviceready", function() {
-    catIndex = steroids.view.params["id"];
-    steroids.view.navigationBar.show("Cat number " + catIndex);
-  });
-}
+  index: function () {
+    steroids.view.navigationBar.show("Index of cats");
+  },
 
-function showCatWithId(id) {
-  var webView = new steroids.views.WebView("views/cats/show.html?id=" + id);
-  steroids.layers.push(webView);
-}
+  show: function () {
+
+  	// Fetch a value from query parameters ?id=x
+    var showId = steroids.view.params["id"];
+    steroids.view.navigationBar.show("cats #" + showId);
+
+    // Just to demonstrate the control flow of the application, hook your own code here
+    document.addEventListener("DOMContentLoaded", function() {
+      document.getElementById("show-id").textContent = showId;
+    });
+
+  }
+
+};
