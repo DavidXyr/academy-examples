@@ -1,5 +1,5 @@
 (function(window){
-/*! steroids-js - v0.3.7 - 2013-02-25 */
+/*! steroids-js - v0.6.2 - 2013-05-02 */
 ;var Bridge,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -37,6 +37,9 @@ Bridge = (function() {
   }
 
   Bridge.prototype.sendMessageToNative = function(options) {
+    if (options == null) {
+      options = {};
+    }
     throw "ERROR: Bridge#sendMessageToNative not overridden by subclass!";
   };
 
@@ -56,6 +59,9 @@ Bridge = (function() {
 
   Bridge.prototype.nativeCall = function(options) {
     var _this = this;
+    if (options == null) {
+      options = {};
+    }
     return this.send({
       method: options.method,
       parameters: options.parameters,
@@ -102,6 +108,9 @@ Bridge = (function() {
 
   Bridge.prototype.send = function(options) {
     var callbacks, request;
+    if (options == null) {
+      options = {};
+    }
     callbacks = this.storeCallbacks(options);
     request = {
       method: options.method,
@@ -111,12 +120,16 @@ Bridge = (function() {
     request.parameters["view"] = window.top.AG_VIEW_ID;
     request.parameters["screen"] = window.top.AG_SCREEN_ID;
     request.parameters["layer"] = window.top.AG_LAYER_ID;
+    request.parameters["udid"] = window.top.AG_WEBVIEW_UDID;
     return this.sendMessageToNative(JSON.stringify(request));
   };
 
   Bridge.prototype.storeCallbacks = function(options) {
     var callback_prefix, callbacks,
       _this = this;
+    if (options == null) {
+      options = {};
+    }
     if ((options != null ? options.callbacks : void 0) == null) {
       return {};
     }
@@ -159,7 +172,7 @@ AndroidBridge = (function(_super) {
   __extends(AndroidBridge, _super);
 
   function AndroidBridge() {
-    AndroidAPIBridge.registerHandler("Steroids.nativeBridge.message_handler");
+    AndroidAPIBridge.registerHandler("steroids.nativeBridge.message_handler");
     window.AG_SCREEN_ID = AndroidAPIBridge.getAGScreenId();
     window.AG_LAYER_ID = AndroidAPIBridge.getAGLayerId();
     window.AG_VIEW_ID = AndroidAPIBridge.getAGViewId();
@@ -191,6 +204,8 @@ WebsocketBridge = (function(_super) {
 
     this.map_context = __bind(this.map_context, this);
 
+    this.open = __bind(this.open, this);
+
     this.reopen = __bind(this.reopen, this);
     this.reopen();
   }
@@ -200,12 +215,46 @@ WebsocketBridge = (function(_super) {
   };
 
   WebsocketBridge.prototype.reopen = function() {
-    this.websocket = new WebSocket("ws://localhost:31337");
+    window.steroids.debug("websocket reopen");
+    this.websocket = null;
+    if (window.AG_CLIENT_VERSION && window.AG_CLIENT_VERSION !== "2.3.3") {
+      return this.requestWebSocketPort(this.open);
+    } else {
+      return this.open("31337");
+    }
+  };
+
+  WebsocketBridge.prototype.open = function(port) {
+    var _this = this;
+    this.websocket = new WebSocket("ws://localhost:" + port);
     this.websocket.onmessage = this.message_handler;
     this.websocket.onclose = this.reopen;
-    this.websocket.addEventListener("open", this.map_context);
-    this.map_context();
-    return false;
+    this.websocket.onopen = function() {
+      window.steroids.debug("websocket websocket opened");
+      _this.map_context();
+      return _this.markWebsocketUsable();
+    };
+    return window.steroids.debug("websocket websocket connecting");
+  };
+
+  WebsocketBridge.prototype.requestWebSocketPort = function(callback) {
+    var xmlhttp,
+      _this = this;
+    window.steroids.debug("websocket request port");
+    xmlhttp = new XMLHttpRequest();
+    xmlhttp.onreadystatechange = function() {
+      if (xmlhttp.readyState === 4) {
+        window.steroids.debug("websocket request port success: " + xmlhttp.responseText);
+        return callback(xmlhttp.responseText);
+      }
+    };
+    xmlhttp.open("GET", "http://dolans.inetrnul.do.nut.cunnoct.localhost/");
+    return xmlhttp.send();
+  };
+
+  WebsocketBridge.prototype.markWebsocketUsable = function() {
+    window.steroids.debug("websocket open, marking usable");
+    return window.steroids.fireSteroidsEvent("websocketUsable");
   };
 
   WebsocketBridge.prototype.map_context = function() {
@@ -216,13 +265,14 @@ WebsocketBridge = (function(_super) {
   };
 
   WebsocketBridge.prototype.sendMessageToNative = function(message) {
-    var _this = this;
-    if (this.websocket.readyState === 0) {
-      return this.websocket.addEventListener("open", function() {
+    var _ref,
+      _this = this;
+    if (((_ref = this.websocket) != null ? _ref.readyState : void 0) === 1) {
+      return this.websocket.send(message);
+    } else {
+      return window.steroids.on("websocketUsable", function() {
         return _this.websocket.send(message);
       });
-    } else {
-      return this.websocket.send(message);
     }
   };
 
@@ -260,11 +310,32 @@ Events = (function() {
       msg: "set document.visibilityState to unloaded"
     });
     document.visibilityState = "unloaded";
+    document.hidden = "true";
     return document.addEventListener("DOMContentLoaded", function() {
       steroids.debug({
         msg: "got DOMContentLoaded, setting document.visibilityState to prerender"
       });
       return document.visibilityState = "prerender";
+    });
+  };
+
+  Events.checkInitialVisibility = function(options, callbacks) {
+    var setVisibilityStatus;
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    setVisibilityStatus = function(event) {
+      document.hidden = event.currentVisibility === "hidden";
+      document.visibilityState = event.currentVisibility;
+      return steroids.markComponentReady("Events.initialVisibility");
+    };
+    return steroids.nativeBridge.nativeCall({
+      method: "getCurrentVisibility",
+      successCallbacks: [setVisibilityStatus, callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
     });
   };
 
@@ -278,6 +349,7 @@ Events = (function() {
       callbacks = {};
     }
     this.initializeVisibilityState();
+    this.checkInitialVisibility();
     focusAdded = function() {
       steroids.debug({
         msg: "focus added"
@@ -295,7 +367,7 @@ Events = (function() {
       steroids.debug({
         msg: "lostfocus added"
       });
-      return steroids.markComponentReady("Events");
+      return steroids.markComponentReady("Events.focuslisteners");
     };
     becomeVisibleEvent = function() {
       steroids.debug({
@@ -451,7 +523,7 @@ Animation = (function() {
   };
 
   function Animation(options) {
-    var _ref;
+    var _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
     if (options == null) {
       options = {};
     }
@@ -461,18 +533,26 @@ Animation = (function() {
     if (this.transition == null) {
       throw "transition required";
     }
-    this.reversedTransition = this.constructor.TRANSITION_REVERSION_MAPPING[this.transition];
-    this.duration = options.duration || 0.7;
-    this.reversedDuration = this.duration;
-    this.curve = options.curve || "easeInOut";
+    this.reversedTransition = (_ref1 = options.reversedTransition) != null ? _ref1 : this.constructor.TRANSITION_REVERSION_MAPPING[this.transition];
+    this.duration = (_ref2 = options.duration) != null ? _ref2 : 0.7;
+    this.reversedDuration = (_ref3 = options.reversedDuration) != null ? _ref3 : this.duration;
+    this.curve = (_ref4 = options.curve) != null ? _ref4 : "easeInOut";
+    this.reversedCurve = (_ref5 = options.reversedCurve) != null ? _ref5 : "easeInOut";
   }
 
   Animation.prototype.perform = function(options, callbacks) {
+    var _ref, _ref1;
     if (options == null) {
       options = {};
     }
     if (callbacks == null) {
       callbacks = {};
+    }
+    if (window.orientation !== 0 && ((_ref = this.transition) === "slideFromRight" || _ref === "slideFromLeft" || _ref === "slideFromTop" || _ref === "slideFromBottom")) {
+      if ((_ref1 = callbacks.onFailure) != null) {
+        _ref1.call();
+      }
+      return;
     }
     return steroids.nativeBridge.nativeCall({
       method: "performTransition",
@@ -495,22 +575,32 @@ App = (function() {
 
   App.prototype.path = void 0;
 
-  App.prototype.userFilesPath = "";
+  App.prototype.userFilesPath = void 0;
 
   App.prototype.absolutePath = void 0;
+
+  App.prototype.absoluteUserFilesPath = void 0;
 
   function App() {
     var _this = this;
     this.getPath({}, {
       onSuccess: function(params) {
         _this.path = params.applicationPath;
+        _this.userFilesPath = params.userFilesPath;
         _this.absolutePath = params.applicationFullPath;
+        _this.absoluteUserFilesPath = params.userFilesFullPath;
         return steroids.markComponentReady("App");
       }
     });
   }
 
   App.prototype.getPath = function(options, callbacks) {
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
     return steroids.nativeBridge.nativeCall({
       method: "getApplicationPath",
       parameters: {},
@@ -519,31 +609,17 @@ App = (function() {
     });
   };
 
-  return App;
-
-})();
-;var Button;
-
-Button = (function() {
-
-  function Button() {}
-
-  Button.prototype.show = function(options, callbacks) {
+  App.prototype.getLaunchURL = function(options, callbacks) {
+    if (options == null) {
+      options = {};
+    }
     if (callbacks == null) {
       callbacks = {};
     }
-    return steroids.nativeBridge.nativeCall({
-      method: "showNavigationBarRightButton",
-      parameters: {
-        title: options.title
-      },
-      successCallbacks: [callbacks.onSuccess],
-      failureCallbacks: [callbacks.onFailure],
-      recurringCallbacks: [callbacks.onRecurring]
-    });
+    return window.AG_STEROIDS_SCANNER_URL;
   };
 
-  return Button;
+  return App;
 
 })();
 ;var Modal;
@@ -553,7 +629,7 @@ Modal = (function() {
   function Modal() {}
 
   Modal.prototype.show = function(options, callbacks) {
-    var view;
+    var parameters, view;
     if (options == null) {
       options = {};
     }
@@ -572,11 +648,17 @@ Modal = (function() {
           failureCallbacks: [callbacks.onFailure]
         });
       case "WebView":
+        parameters = view.id != null ? {
+          id: view.id
+        } : {
+          url: view.location
+        };
+        if (options.keepLoading === true) {
+          parameters.keepTransitionHelper = true;
+        }
         return steroids.nativeBridge.nativeCall({
           method: "openModal",
-          parameters: {
-            url: view.location
-          },
+          parameters: parameters,
           successCallbacks: [callbacks.onSuccess],
           failureCallbacks: [callbacks.onFailure]
         });
@@ -601,6 +683,192 @@ Modal = (function() {
   };
 
   return Modal;
+
+})();
+;var DrawerCollection;
+
+DrawerCollection = (function() {
+
+  function DrawerCollection() {
+    this.defaultAnimations = {
+      LEFT: new Animation("slideFromLeft"),
+      RIGHT: new Animation("slideFromRight"),
+      TOP: new Animation("slideFromTop"),
+      BOTTOM: new Animation("slideFromBottom")
+    };
+    this.defaultWidth = Math.floor(75 / 100 * window.screen.width);
+  }
+
+  DrawerCollection.prototype.takeParamsFromAnimation = function(animation, parameters) {
+    parameters.pushAnimation = animation.transition;
+    parameters.pushAnimationDuration = animation.duration;
+    parameters.popAnimation = animation.reversedTransition;
+    parameters.popAnimationDuration = animation.reversedDuration;
+    parameters.pushAnimationCurve = animation.curve;
+    return parameters.popAnimationCurve = animation.reversedCurve;
+  };
+
+  DrawerCollection.prototype.hide = function(options, callbacks) {
+    var parameters;
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    steroids.debug("steroids.drawers.hide called");
+    parameters = {
+      edge: "left"
+    };
+    if (options.animation != null) {
+      steroids.debug("steroids.drawers.show using custom animation");
+      this.takeParamsFromAnimation(options.animation, parameters);
+    } else {
+      steroids.debug("steroids.drawers.show using default animation");
+      this.takeParamsFromAnimation(window.steroids.drawers.defaultAnimations.LEFT, parameters);
+    }
+    return steroids.nativeBridge.nativeCall({
+      method: "closeDrawer",
+      parameters: parameters,
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  DrawerCollection.prototype.hideAll = function(options, callbacks) {
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    return this.hide(options, callbacks);
+  };
+
+  DrawerCollection.prototype.show = function(options, callbacks) {
+    var parameters, view;
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    steroids.debug("steroids.drawers.show called");
+    view = options.constructor.name === "WebView" ? (steroids.debug("steroids.drawers.show using view shorthand"), options) : (steroids.debug("steroids.drawers.show using longhand"), options.view);
+    parameters = {
+      edge: "left"
+    };
+    if (view.id != null) {
+      steroids.debug("steroids.drawers.show using preloaded view");
+      parameters.id = view.id;
+    } else {
+      steroids.debug("steroids.drawers.show using new view");
+      parameters.url = view.location;
+    }
+    if (options.keepLoading === true) {
+      steroids.debug("steroids.drawers.show using keepLoading");
+      parameters.keepTransitionHelper = true;
+    }
+    if (options.animation != null) {
+      steroids.debug("steroids.drawers.show using custom animation");
+      this.takeParamsFromAnimation(options.animation, parameters);
+    } else {
+      steroids.debug("steroids.drawers.show using default animation");
+      this.takeParamsFromAnimation(this.defaultAnimations.LEFT, parameters);
+    }
+    if (options.widthOfDrawerInPixels != null) {
+      steroids.debug("steroids.drawers.show using custom width of drawer to determine cutoff point");
+      parameters.widthOfDrawerInPixels = options.widthOfDrawerInPixels;
+    } else {
+      steroids.debug("steroids.drawers.show using default width of drawer to determine cutoff point");
+      parameters.widthOfDrawerInPixels = this.defaultWidth;
+    }
+    if (options.widthOfLayerInPixels != null) {
+      steroids.debug("steroids.drawers.show using custom width of layer to determine cutoff point");
+      parameters.widthOfLayerInPixels = options.widthOfLayerInPixels;
+    }
+    if (options.edge != null) {
+      steroids.debug("steroids.drawers.show using custom edge to show drawer from");
+      parameters.edge = options.edge;
+    } else {
+      steroids.debug("steroids.drawers.show using default edge to show drawer from");
+      parameters.edge = steroids.screen.edges.LEFT;
+    }
+    return steroids.nativeBridge.nativeCall({
+      method: "openDrawer",
+      parameters: parameters,
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  DrawerCollection.prototype.enableGesture = function(options, callbacks) {
+    var parameters, view;
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    steroids.debug("steroids.drawers.enableGesture called");
+    view = options.constructor.name === "WebView" ? (steroids.debug("steroids.drawers.enableGesture using view shorthand"), options) : (steroids.debug("steroids.drawers.enableGesture using longhand"), options.view);
+    parameters = {
+      edge: "left"
+    };
+    if (view.id != null) {
+      steroids.debug("steroids.drawers.enableGesture using preloaded view");
+      parameters.id = view.id;
+    } else {
+      steroids.debug("steroids.drawers.enableGesture using new view");
+      parameters.url = view.location;
+    }
+    if (options.keepLoading === true) {
+      steroids.debug("steroids.drawers.enableGesture using keepLoading");
+      parameters.keepTransitionHelper = true;
+    }
+    if (options.widthOfDrawerInPixels != null) {
+      steroids.debug("steroids.drawers.enableGesture using custom width of drawer to determine cutoff point");
+      parameters.widthOfDrawerInPixels = options.widthOfDrawerInPixels;
+    } else {
+      steroids.debug("steroids.drawers.enableGesture using default width of drawer to determine cutoff point");
+      parameters.widthOfDrawerInPixels = this.defaultWidth;
+    }
+    if (options.widthOfLayerInPixels != null) {
+      steroids.debug("steroids.drawers.enableGesture using custom width of layer to determine cutoff point");
+      parameters.widthOfLayerInPixels = options.widthOfLayerInPixels;
+    }
+    if (options.edge != null) {
+      steroids.debug("steroids.drawers.enableGesture using custom edge to show drawer from");
+      parameters.edge = options.edge;
+    } else {
+      steroids.debug("steroids.drawers.enableGesture using default edge to show drawer from");
+      parameters.edge = steroids.screen.edges.LEFT;
+    }
+    return steroids.nativeBridge.nativeCall({
+      method: "enableDrawerGesture",
+      parameters: parameters,
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  DrawerCollection.prototype.disableGesture = function(options, callbacks) {
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    steroids.debug("steroids.drawers.disableGesture called");
+    return steroids.nativeBridge.nativeCall({
+      method: "disableDrawerGesture",
+      parameters: {},
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  return DrawerCollection;
 
 })();
 ;var LayerCollection;
@@ -630,6 +898,20 @@ LayerCollection = (function() {
     });
   };
 
+  LayerCollection.prototype.popAll = function(options, callbacks) {
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    return steroids.nativeBridge.nativeCall({
+      method: "popAllLayers",
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
   LayerCollection.prototype.push = function(options, callbacks) {
     var defaultOnSuccess, parameters, view,
       _this = this;
@@ -651,11 +933,16 @@ LayerCollection = (function() {
     if (options.navigationBar === false) {
       parameters.hidesNavigationBar = true;
     }
+    if (options.keepLoading === true) {
+      parameters.keepTransitionHelper = true;
+    }
     if (options.animation != null) {
       parameters.pushAnimation = options.animation.transition;
       parameters.pushAnimationDuration = options.animation.duration;
       parameters.popAnimation = options.animation.reversedTransition;
       parameters.popAnimationDuration = options.animation.reversedDuration;
+      parameters.pushAnimationCurve = options.animation.curve;
+      parameters.popAnimationCurve = options.animation.reversedCurve;
     }
     return steroids.nativeBridge.nativeCall({
       method: "openLayer",
@@ -756,7 +1043,60 @@ NavigationBar = (function() {
   return NavigationBar;
 
 })();
-;var WebView;
+;var BounceShadow;
+
+BounceShadow = (function() {
+
+  function BounceShadow() {}
+
+  BounceShadow.prototype.hide = function(options, callbacks) {
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    return this.setVisibility({
+      visibility: false
+    }, callbacks);
+  };
+
+  BounceShadow.prototype.show = function(options, callbacks) {
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    return this.setVisibility({
+      visibility: true
+    }, callbacks);
+  };
+
+  BounceShadow.prototype.setVisibility = function(options, callbacks) {
+    var visibility;
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    visibility = options.constructor.name === "String" ? options : options.visibility;
+    return steroids.nativeBridge.nativeCall({
+      method: "setWebViewBounceShadowVisibility",
+      parameters: {
+        visibility: visibility
+      },
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  return BounceShadow;
+
+})();
+;var WebView,
+  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 WebView = (function() {
 
@@ -766,7 +1106,11 @@ WebView = (function() {
 
   WebView.prototype.location = null;
 
+  WebView.prototype.allowedRotations = null;
+
   WebView.prototype.navigationBar = new NavigationBar;
+
+  WebView.prototype.bounceShadow = new BounceShadow;
 
   function WebView(options) {
     if (options == null) {
@@ -779,6 +1123,7 @@ WebView = (function() {
       }
     }
     this.params = this.getParams();
+    this.setAllowedRotations([]);
   }
 
   WebView.prototype.preload = function(options, callbacks) {
@@ -819,6 +1164,59 @@ WebView = (function() {
     return params;
   };
 
+  WebView.prototype.removeLoading = function(options, callbacks) {
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    return steroids.nativeBridge.nativeCall({
+      method: "removeTransitionHelper",
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  WebView.prototype.setAllowedRotations = function(options, callbacks) {
+    var _ref,
+      _this = this;
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    this.allowedRotations = options.constructor.name === "Array" ? options : options.allowedRotations;
+    window.shouldRotateToOrientation = function(orientation) {
+      if (__indexOf.call(_this.allowedRotations, orientation) >= 0) {
+        return true;
+      } else {
+        return false;
+      }
+    };
+    return (_ref = callbacks.onSuccess) != null ? _ref.call() : void 0;
+  };
+
+  WebView.prototype.setBackgroundColor = function(options, callbacks) {
+    var newColor;
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    newColor = options.constructor.name === "String" ? options : options.color;
+    return steroids.nativeBridge.nativeCall({
+      method: "setWebViewBackgroundColor",
+      parameters: {
+        color: newColor
+      },
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
   return WebView;
 
 })();
@@ -842,15 +1240,6 @@ PreviewFileView = (function() {
   return PreviewFileView;
 
 })();
-;var Tab;
-
-Tab = (function() {
-
-  function Tab() {}
-
-  return Tab;
-
-})();
 ;var Audio;
 
 Audio = (function() {
@@ -858,12 +1247,24 @@ Audio = (function() {
   function Audio() {}
 
   Audio.prototype.play = function(options, callbacks) {
-    var _this = this;
+    var readyCapableDevice,
+      _this = this;
+    if (options == null) {
+      options = {};
+    }
     if (callbacks == null) {
       callbacks = {};
     }
+    readyCapableDevice = false;
+    setTimeout(function() {
+      if (readyCapableDevice) {
+        return;
+      }
+      return navigator.notification.alert("Audio playback requires a newer version of Scanner, please update from the App Store.", null, "Update Required");
+    }, 500);
     return steroids.on("ready", function() {
       var mediaPath, relativeTo, _ref;
+      readyCapableDevice = true;
       relativeTo = (_ref = options.relativeTo) != null ? _ref : steroids.app.path;
       mediaPath = options.constructor.name === "String" ? "" + relativeTo + "/" + options : "" + relativeTo + "/" + options.path;
       return steroids.nativeBridge.nativeCall({
@@ -895,21 +1296,12 @@ Audio = (function() {
   return Audio;
 
 })();
-;var Camera;
-
-Camera = (function() {
-
-  function Camera() {}
-
-  return Camera;
-
-})();
 ;var OAuth2Flow;
 
 OAuth2Flow = (function() {
 
   function OAuth2Flow(options) {
-    this.options = options;
+    this.options = options != null ? options : {};
     this.options.callbackUrl = "http://localhost:13101/" + this.options.callbackPath;
   }
 
@@ -1108,7 +1500,7 @@ TouchDB = (function() {
   TouchDB.baseURL = "http://.touchdb.";
 
   function TouchDB(options) {
-    this.options = options;
+    this.options = options != null ? options : {};
     if (!this.options.name) {
       throw "Database name required";
     }
@@ -1349,6 +1741,13 @@ Screen = (function() {
 
   function Screen() {}
 
+  Screen.prototype.edges = {
+    LEFT: "left",
+    RIGHT: "right",
+    TOP: "top",
+    BOTTOM: "bottom"
+  };
+
   Screen.prototype.freeze = function(options, callbacks) {
     if (options == null) {
       options = {};
@@ -1403,6 +1802,9 @@ File = (function() {
 
   function File(options) {
     var _ref;
+    if (options == null) {
+      options = {};
+    }
     this.path = options.constructor.name === "String" ? options : options.path;
     this.relativeTo = (_ref = options.relativeTo) != null ? _ref : steroids.app.path;
   }
@@ -1504,9 +1906,68 @@ OpenURL = (function() {
   return OpenURL;
 
 })();
+;var Notifications;
+
+Notifications = (function() {
+
+  function Notifications() {}
+
+  Notifications.prototype.post = function(options, callbacks) {
+    var message;
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    message = options.constructor.name === "String" ? options : options.message;
+    return steroids.nativeBridge.nativeCall({
+      method: "postNotification",
+      parameters: {
+        body: message
+      },
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  return Notifications;
+
+})();
+;var PostMessage;
+
+PostMessage = (function() {
+
+  function PostMessage() {}
+
+  PostMessage.postMessage = function(message, targetOrigin) {
+    var callbacks, escapedJSONMessage;
+    callbacks = {};
+    escapedJSONMessage = escape(JSON.stringify(message));
+    return steroids.nativeBridge.nativeCall({
+      method: "broadcastJavascript",
+      parameters: {
+        javascript: "steroids.PostMessage.dispatchMessageEvent('" + escapedJSONMessage + "', '*');"
+      },
+      successCallbacks: [callbacks.onSuccess],
+      recurringCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  PostMessage.dispatchMessageEvent = function(escapedJSONMessage, targetOrigin) {
+    var e, message;
+    message = JSON.parse(unescape(escapedJSONMessage));
+    e = document.createEvent("MessageEvent");
+    e.initMessageEvent("message", false, false, message, "", "", window, null);
+    return window.dispatchEvent(e);
+  };
+
+  return PostMessage;
+
+}).call(this);
 ;
 window.steroids = {
-  version: "0.3.7",
+  version: "0.6.2",
   Animation: Animation,
   XHR: XHR,
   File: File,
@@ -1521,12 +1982,16 @@ window.steroids = {
     TouchDB: TouchDB,
     OAuth2: OAuth2
   },
+  openURL: OpenURL.open,
   eventCallbacks: {},
   waitingForComponents: [],
   debugMessages: [],
   debugEnabled: false,
   debug: function(options) {
     var debugMessage, msg;
+    if (options == null) {
+      options = {};
+    }
     if (!steroids.debugEnabled) {
       return;
     }
@@ -1537,30 +2002,36 @@ window.steroids = {
   },
   on: function(event, callback) {
     var _base;
+    this.debug("on event " + event);
     if (this["" + event + "_has_fired"] != null) {
+      this.debug("on event " + event + ", alrueady fierd");
       return callback();
     } else {
+      this.debug("on event " + event + ", waiting");
       (_base = this.eventCallbacks)[event] || (_base[event] = []);
       return this.eventCallbacks[event].push(callback);
     }
   },
   fireSteroidsEvent: function(event) {
-    var callback, _i, _len, _ref, _results;
+    var callback, callbacks, _i, _len, _results;
+    this.debug("firign event " + event);
     this["" + event + "_has_fired"] = new Date().getTime();
     if (this.eventCallbacks[event] != null) {
-      _ref = this.eventCallbacks[event];
+      callbacks = this.eventCallbacks[event].splice(0);
       _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        callback = _ref[_i];
-        callback();
-        _results.push(this.eventCallbacks[event].splice(this.eventCallbacks[event].indexOf(callback), 1));
+      for (_i = 0, _len = callbacks.length; _i < _len; _i++) {
+        callback = callbacks[_i];
+        this.debug("firing event callback");
+        _results.push(callback());
       }
       return _results;
     }
   },
   markComponentReady: function(model) {
+    this.debug("" + model + " is ready");
     this.waitingForComponents.splice(this.waitingForComponents.indexOf(model), 1);
     if (this.waitingForComponents.length === 0) {
+      this.debug("steroids is ready");
       return this.fireSteroidsEvent("ready");
     }
   }
@@ -1570,11 +2041,15 @@ window.steroids.nativeBridge = Bridge.getBestNativeBridge();
 
 window.steroids.waitingForComponents.push("App");
 
+window.steroids.waitingForComponents.push("Events.focuslisteners");
+
+window.steroids.waitingForComponents.push("Events.initialVisibility");
+
 window.steroids.app = new App;
 
-window.steroids.waitingForComponents.push("Events");
-
 Events.extend();
+
+window.steroids.drawers = new DrawerCollection;
 
 window.steroids.layers = new LayerCollection;
 
@@ -1588,12 +2063,16 @@ window.steroids.audio = new Audio;
 
 window.steroids.navigationBar = new NavigationBar;
 
-window.steroids.openURL = OpenURL.open;
-
 window.steroids.device = new Device;
 
 window.steroids.analytics = new Analytics;
 
 window.steroids.screen = new Screen;
+
+window.steroids.notifications = new Notifications;
+
+window.steroids.PostMessage = PostMessage;
+
+window.postMessage = PostMessage.postMessage;
 
 })(window)
