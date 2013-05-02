@@ -1,7 +1,7 @@
 {
-  "name": "Academy Lesson 4.1. - Layer stack",
+  "name": "myProject",
   "version": "0.0.1",
   "dependencies": {
-    "steroids-js": "git://github.com/steroidsjs/steroids-js.git#0.3.x",
+    "steroids-js": "0.6.x"
   }
 }
