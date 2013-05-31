@@ -1,7 +1,7 @@
 # -- Required settings --
 # Name of the application, used as the app name when creating a build
 
-steroids.config.name = "Academy Lesson 2.3. – Accessing hardware with Cordova APIs"
+steroids.config.name = "Steroids Academy – Accessing hardware with Cordova APIs"
 
 # -- Location: steroids.config.location --
 # Defines the location of the HTML document that the initial steroids.views.WebView will render (for applications without the tab bar).
@@ -11,7 +11,7 @@ steroids.config.name = "Academy Lesson 2.3. – Accessing hardware with Cordova 
 #   - localhost URL, starting with http://localhost/ (serves the document locally from the www/ folder, e.g. 'http://localhost/index.html' would serve www/index.html)
 #   - external URL (directly from the internets, e.g. http://www.google.com)
 
-steroids.config.location = "http://localhost/camera.html"
+steroids.config.location = "camera.html"
 
 # -- Remote hosts: steroids.config.hosts --
 # Defines the hostnames that the application will capture and serve application files from.

@@ -2,8 +2,9 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <link rel="stylesheet" href="/stylesheets/ratchet-steroids.css" type="text/css">
-  <script src="javascripts/cordova.js"></script>
+  <title>Accessing hardware with Cordova APIs</title>
+  <link rel="stylesheet" href="stylesheets/ratchet-steroids.css" type="text/css">
+  <script src="http://localhost/appgyver/cordova.js"></script>
   <script>
     function cameraOnSuccess(imageURI) {
       console.log(imageURI);
@@ -21,16 +22,18 @@
         });
     }
   </script>
+  <style>
+    img {
+      max-width:300px;
+    }
+  </style>
 </head>
 <body>
-  <br>
-  <br>
-  <a class="button" ontouchstart="cameraGetPicture()">Grab a picture</a>
-  <br>
-  <br>
+  <div class="content-padded">
+    <a class="button-block" ontouchstart="cameraGetPicture()">Grab a picture</a>
+    <hr>
   
-  <hr>
-  
-  <img id="myImage" width="304"></img>
+    <img id="myImage"></img>
+  </div>
 </body>
 </html>
