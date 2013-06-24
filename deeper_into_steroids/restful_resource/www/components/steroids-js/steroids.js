@@ -1,5 +1,5 @@
 (function(window){
-/*! steroids-js - v0.6.1 - 2013-04-08 */
+/*! steroids-js - v2.7.1 - 2013-06-04 */
 ;var Bridge,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -216,16 +216,15 @@ WebsocketBridge = (function(_super) {
 
   WebsocketBridge.prototype.reopen = function() {
     window.steroids.debug("websocket reopen");
+    window.steroids.resetSteroidsEvent("websocketUsable");
     this.websocket = null;
-    if (window.AG_CLIENT_VERSION && window.AG_CLIENT_VERSION !== "2.3.3") {
-      return this.requestWebSocketPort(this.open);
-    } else {
-      return this.open("31337");
-    }
+    window.steroids.debug("websocket using dynamic port");
+    return this.requestWebSocketPort(this.open);
   };
 
   WebsocketBridge.prototype.open = function(port) {
     var _this = this;
+    window.steroids.debug("websocket websocket open");
     this.websocket = new WebSocket("ws://localhost:" + port);
     this.websocket.onmessage = this.message_handler;
     this.websocket.onclose = this.reopen;
@@ -234,7 +233,7 @@ WebsocketBridge = (function(_super) {
       _this.map_context();
       return _this.markWebsocketUsable();
     };
-    return window.steroids.debug("websocket websocket connecting");
+    return window.steroids.debug("websocket websocket opening");
   };
 
   WebsocketBridge.prototype.requestWebSocketPort = function(callback) {
@@ -249,7 +248,8 @@ WebsocketBridge = (function(_super) {
       }
     };
     xmlhttp.open("GET", "http://dolans.inetrnul.do.nut.cunnoct.localhost/");
-    return xmlhttp.send();
+    xmlhttp.send();
+    return window.steroids.debug("websocket requesting port");
   };
 
   WebsocketBridge.prototype.markWebsocketUsable = function() {
@@ -458,6 +458,12 @@ Torch = (function() {
 Device = (function() {
 
   function Device() {
+    this.setSleepDisabled = __bind(this.setSleepDisabled, this);
+
+    this.enableSleep = __bind(this.enableSleep, this);
+
+    this.disableSleep = __bind(this.disableSleep, this);
+
     this.getIPAddress = __bind(this.getIPAddress, this);
 
     this.ping = __bind(this.ping, this);
@@ -495,6 +501,47 @@ Device = (function() {
     return steroids.nativeBridge.nativeCall({
       method: "getIPAddress",
       parameters: {},
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  Device.prototype.disableSleep = function(options, callbacks) {
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    options.disabled = true;
+    return this.setSleepDisabled(options, callbacks);
+  };
+
+  Device.prototype.enableSleep = function(options, callbacks) {
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    options.disabled = false;
+    return this.setSleepDisabled(options, callbacks);
+  };
+
+  Device.prototype.setSleepDisabled = function(options, callbacks) {
+    var disabled;
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    disabled = options.constructor.name === "Boolean" ? options : options.disabled;
+    return steroids.nativeBridge.nativeCall({
+      method: "setSleepDisabled",
+      parameters: {
+        sleepDisabled: disabled
+      },
       successCallbacks: [callbacks.onSuccess],
       failureCallbacks: [callbacks.onFailure]
     });
@@ -685,6 +732,195 @@ Modal = (function() {
   return Modal;
 
 })();
+;var DrawerCollection;
+
+DrawerCollection = (function() {
+
+  function DrawerCollection() {
+    this.defaultAnimations = {
+      LEFT: new Animation({
+        transition: "slideFromLeft",
+        duration: 0.2
+      }),
+      RIGHT: new Animation("slideFromRight"),
+      TOP: new Animation("slideFromTop"),
+      BOTTOM: new Animation("slideFromBottom")
+    };
+    this.defaultWidth = Math.floor(75 / 100 * window.screen.width);
+  }
+
+  DrawerCollection.prototype.takeParamsFromAnimation = function(animation, parameters) {
+    parameters.pushAnimation = animation.transition;
+    parameters.pushAnimationDuration = animation.duration;
+    parameters.popAnimation = animation.reversedTransition;
+    parameters.popAnimationDuration = animation.reversedDuration;
+    parameters.pushAnimationCurve = animation.curve;
+    return parameters.popAnimationCurve = animation.reversedCurve;
+  };
+
+  DrawerCollection.prototype.hide = function(options, callbacks) {
+    var parameters;
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    steroids.debug("steroids.drawers.hide called");
+    parameters = {
+      edge: "left"
+    };
+    if (options.animation != null) {
+      steroids.debug("steroids.drawers.show using custom animation");
+      this.takeParamsFromAnimation(options.animation, parameters);
+    } else {
+      steroids.debug("steroids.drawers.show using default animation");
+      this.takeParamsFromAnimation(window.steroids.drawers.defaultAnimations.LEFT, parameters);
+    }
+    return steroids.nativeBridge.nativeCall({
+      method: "closeDrawer",
+      parameters: parameters,
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  DrawerCollection.prototype.hideAll = function(options, callbacks) {
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    return this.hide(options, callbacks);
+  };
+
+  DrawerCollection.prototype.show = function(options, callbacks) {
+    var parameters, view;
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    steroids.debug("steroids.drawers.show called");
+    view = options.constructor.name === "WebView" ? (steroids.debug("steroids.drawers.show using view shorthand"), options) : (steroids.debug("steroids.drawers.show using longhand"), options.view);
+    parameters = {
+      edge: "left"
+    };
+    if (view.id != null) {
+      steroids.debug("steroids.drawers.show using preloaded view");
+      parameters.id = view.id;
+    } else {
+      steroids.debug("steroids.drawers.show using new view");
+      parameters.url = view.location;
+    }
+    if (options.keepLoading === true) {
+      steroids.debug("steroids.drawers.show using keepLoading");
+      parameters.keepTransitionHelper = true;
+    }
+    if (options.animation != null) {
+      steroids.debug("steroids.drawers.show using custom animation");
+      this.takeParamsFromAnimation(options.animation, parameters);
+    } else {
+      steroids.debug("steroids.drawers.show using default animation");
+      this.takeParamsFromAnimation(this.defaultAnimations.LEFT, parameters);
+    }
+    if (options.widthOfDrawerInPixels != null) {
+      steroids.debug("steroids.drawers.show using custom width of drawer to determine cutoff point");
+      parameters.widthOfDrawerInPixels = options.widthOfDrawerInPixels;
+    } else {
+      steroids.debug("steroids.drawers.show using default width of drawer to determine cutoff point");
+      parameters.widthOfDrawerInPixels = this.defaultWidth;
+    }
+    if (options.widthOfLayerInPixels != null) {
+      steroids.debug("steroids.drawers.show using custom width of layer to determine cutoff point");
+      parameters.widthOfLayerInPixels = options.widthOfLayerInPixels;
+    }
+    if (options.edge != null) {
+      steroids.debug("steroids.drawers.show using custom edge to show drawer from");
+      parameters.edge = options.edge;
+    } else {
+      steroids.debug("steroids.drawers.show using default edge to show drawer from");
+      parameters.edge = steroids.screen.edges.LEFT;
+    }
+    return steroids.nativeBridge.nativeCall({
+      method: "openDrawer",
+      parameters: parameters,
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  DrawerCollection.prototype.enableGesture = function(options, callbacks) {
+    var parameters, view;
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    steroids.debug("steroids.drawers.enableGesture called");
+    view = options.constructor.name === "WebView" ? (steroids.debug("steroids.drawers.enableGesture using view shorthand"), options) : (steroids.debug("steroids.drawers.enableGesture using longhand"), options.view);
+    parameters = {
+      edge: "left"
+    };
+    if (view.id != null) {
+      steroids.debug("steroids.drawers.enableGesture using preloaded view");
+      parameters.id = view.id;
+    } else {
+      steroids.debug("steroids.drawers.enableGesture using new view");
+      parameters.url = view.location;
+    }
+    if (options.keepLoading === true) {
+      steroids.debug("steroids.drawers.enableGesture using keepLoading");
+      parameters.keepTransitionHelper = true;
+    }
+    if (options.widthOfDrawerInPixels != null) {
+      steroids.debug("steroids.drawers.enableGesture using custom width of drawer to determine cutoff point");
+      parameters.widthOfDrawerInPixels = options.widthOfDrawerInPixels;
+    } else {
+      steroids.debug("steroids.drawers.enableGesture using default width of drawer to determine cutoff point");
+      parameters.widthOfDrawerInPixels = this.defaultWidth;
+    }
+    if (options.widthOfLayerInPixels != null) {
+      steroids.debug("steroids.drawers.enableGesture using custom width of layer to determine cutoff point");
+      parameters.widthOfLayerInPixels = options.widthOfLayerInPixels;
+    }
+    if (options.edge != null) {
+      steroids.debug("steroids.drawers.enableGesture using custom edge to show drawer from");
+      parameters.edge = options.edge;
+    } else {
+      steroids.debug("steroids.drawers.enableGesture using default edge to show drawer from");
+      parameters.edge = steroids.screen.edges.LEFT;
+    }
+    return steroids.nativeBridge.nativeCall({
+      method: "enableDrawerGesture",
+      parameters: parameters,
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  DrawerCollection.prototype.disableGesture = function(options, callbacks) {
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    steroids.debug("steroids.drawers.disableGesture called");
+    return steroids.nativeBridge.nativeCall({
+      method: "disableDrawerGesture",
+      parameters: {},
+      successCallbacks: [callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  return DrawerCollection;
+
+})();
 ;var LayerCollection;
 
 LayerCollection = (function() {
@@ -760,6 +996,37 @@ LayerCollection = (function() {
     }
     return steroids.nativeBridge.nativeCall({
       method: "openLayer",
+      parameters: parameters,
+      successCallbacks: [defaultOnSuccess, callbacks.onSuccess],
+      failureCallbacks: [callbacks.onFailure]
+    });
+  };
+
+  LayerCollection.prototype.replace = function(options, callbacks) {
+    var defaultOnSuccess, parameters, view,
+      _this = this;
+    if (options == null) {
+      options = {};
+    }
+    if (callbacks == null) {
+      callbacks = {};
+    }
+    steroids.debug("steroids.layers.replace called");
+    defaultOnSuccess = function() {
+      steroids.debug("steroids.layers.replace defaultOnSuccess");
+      return _this.array = [view];
+    };
+    view = options.constructor.name === "WebView" ? (steroids.debug("steroids.layers.replace using view shorthand"), options) : (steroids.debug("steroids.layers.replace using longhand"), options.view);
+    parameters = {};
+    if (view.id != null) {
+      steroids.debug("steroids.layers.replace using preloaded view");
+      parameters.id = view.id;
+    } else {
+      steroids.debug("steroids.layers.replace using new view");
+      parameters.url = view.location;
+    }
+    return steroids.nativeBridge.nativeCall({
+      method: "replaceLayers",
       parameters: parameters,
       successCallbacks: [defaultOnSuccess, callbacks.onSuccess],
       failureCallbacks: [callbacks.onFailure]
@@ -1555,6 +1822,13 @@ Screen = (function() {
 
   function Screen() {}
 
+  Screen.prototype.edges = {
+    LEFT: "left",
+    RIGHT: "right",
+    TOP: "top",
+    BOTTOM: "bottom"
+  };
+
   Screen.prototype.freeze = function(options, callbacks) {
     if (options == null) {
       options = {};
@@ -1774,7 +2048,7 @@ PostMessage = (function() {
 }).call(this);
 ;
 window.steroids = {
-  version: "0.6.1",
+  version: "2.7.1",
   Animation: Animation,
   XHR: XHR,
   File: File,
@@ -1789,10 +2063,12 @@ window.steroids = {
     TouchDB: TouchDB,
     OAuth2: OAuth2
   },
+  openURL: OpenURL.open,
   eventCallbacks: {},
   waitingForComponents: [],
   debugMessages: [],
   debugEnabled: false,
+  debugConsole: console,
   debug: function(options) {
     var debugMessage, msg;
     if (options == null) {
@@ -1804,7 +2080,7 @@ window.steroids = {
     msg = options.constructor.name === "String" ? options : options.msg;
     debugMessage = "" + window.location.href + " - " + msg;
     window.steroids.debugMessages.push(debugMessage);
-    return console.log(debugMessage);
+    return this.debugConsole.log(debugMessage);
   },
   on: function(event, callback) {
     var _base;
@@ -1823,15 +2099,20 @@ window.steroids = {
     this.debug("firign event " + event);
     this["" + event + "_has_fired"] = new Date().getTime();
     if (this.eventCallbacks[event] != null) {
+      this.debug("firign event " + event + " callbacks");
       callbacks = this.eventCallbacks[event].splice(0);
       _results = [];
       for (_i = 0, _len = callbacks.length; _i < _len; _i++) {
         callback = callbacks[_i];
-        this.debug("firing event callback");
+        this.debug("firing event " + event + " callback");
         _results.push(callback());
       }
       return _results;
     }
+  },
+  resetSteroidsEvent: function(event) {
+    this.debug("resettign event " + event);
+    return this["" + event + "_has_fired"] = void 0;
   },
   markComponentReady: function(model) {
     this.debug("" + model + " is ready");
@@ -1847,13 +2128,15 @@ window.steroids.nativeBridge = Bridge.getBestNativeBridge();
 
 window.steroids.waitingForComponents.push("App");
 
-window.steroids.app = new App;
-
 window.steroids.waitingForComponents.push("Events.focuslisteners");
 
 window.steroids.waitingForComponents.push("Events.initialVisibility");
 
+window.steroids.app = new App;
+
 Events.extend();
+
+window.steroids.drawers = new DrawerCollection;
 
 window.steroids.layers = new LayerCollection;
 
@@ -1866,8 +2149,6 @@ window.steroids.modal = new Modal;
 window.steroids.audio = new Audio;
 
 window.steroids.navigationBar = new NavigationBar;
-
-window.steroids.openURL = OpenURL.open;
 
 window.steroids.device = new Device;
 

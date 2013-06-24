@@ -4,7 +4,7 @@
   <meta charset="utf8">
   <title>Steroids App</title>
 
-  <link rel="stylesheet" href="/stylesheets/ratchet-steroids.css" />
+  <link rel="stylesheet" href="/vendor/topcoat/css/topcoat-mobile-light.css" />
   <link rel="stylesheet" href="/stylesheets/application.css" />
 
   <script src="/javascripts/onerror.js"></script>
@@ -18,25 +18,24 @@
   <script src="/models/models.js"></script>
 
   <script src="/controllers/application.js"></script>
-  <script src="/controllers/cats.js"></script>
+  <script src="/controllers/cat.js"></script>
 </head>
 <body>
 
   <script>
-  CatsController.index();
+  CatController.index();
 </script>
 
-<ul class="list">
-  <li class="opensLayer" data-location="/views/cats/show.html?id=1">
-    Show first cats
-    <span class="chevron"></span>
-  </li>
-  <li class="opensLayer" data-location="/views/cats/show.html?id=2">
-    Show second cats
-    <span class="chevron"></span>
-  </li>
-</ul>
-
+<div class="topcoat-list__container">
+  <ul class="topcoat-list">
+    <li class="topcoat-list__item opensLayer" data-location="/views/cat/show.html?id=1">
+      Show first cat item
+    </li>
+    <li class="topcoat-list__item opensLayer" data-location="/views/cat/show.html?id=2">
+      Show second cat item
+    </li>
+  </ul>
+</div>
 
 </body>
 </html>
