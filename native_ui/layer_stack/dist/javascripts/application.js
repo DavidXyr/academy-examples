@@ -3,28 +3,15 @@ function showCat() {
   steroids.layers.push(webView);
 }
 
-function showCatNoNavBar() {
+function showCatWithAnim() {
+  var anim = new steroids.Animation("curlUp");
   var webView = new steroids.views.WebView("showCat.html");
+  
   steroids.layers.push( {
     view: webView,
-    navigationBar: false
+    animation: anim
   } );
+  
 }
 
-function showCatWithAnimation() {
-  var webView = new steroids.views.WebView("showCat.html");
-  steroids.layers.push( {
-    view: webView,
-    animation: {
-      transition: "slideFromLeft",
-      duration: 1.2,
-      reversedTransition: "slideFromRight",
-      reversedDuration: 1.2
-    }
-  } );
-}
-
-function previewDolanImage() {
-  var webView = new steroids.views.PreviewFileView("images/dolan.png");
-  steroids.modal.show(webView);
-}
+steroids.view.navigationBar.show("Layer Stack");
