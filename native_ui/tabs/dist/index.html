@@ -4,25 +4,20 @@
   <meta charset="utf8">
   <title>My Steroids App</title>
 
-  <link rel="stylesheet" href="/stylesheets/ratchet-steroids.css" />
-  <link rel="stylesheet" href="/stylesheets/application.css" />
+  <link rel="stylesheet" href="vendor/topcoat/css/topcoat-mobile-light.css" />
+  <link rel="stylesheet" href="stylesheets/application.css" />
 
-  <script src="/javascripts/onerror.js"></script>
+  <script src="javascripts/onerror.js"></script>
 
-  <script src="/appgyver/cordova.js"></script>
-  <script src="/components/steroids-js/steroids.js"></script>
+  <!-- cordova.js is served from localhost to ensure the correct version -->
+  <script src="http://localhost/appgyver/cordova.js"></script>
+  <script src="components/steroids-js/steroids.js"></script>
 
-  <script src="/javascripts/application.js"></script>
+  <script src="javascripts/application.js"></script>
 </head>
 <body>
-  <script type="text/javascript">
-    function show() {
-      var webView = new steroids.views.WebView("show.html");
-      steroids.layers.push(webView);
-    }
-  </script>
   <div class="content-padded">
-    <a class="button" ontouchstart="show()">Open show.html</a>
+    <a class="topcoat-button center full" ontouchend="show()">Open show.html</a>
   </div>
 </body>
 </html>
