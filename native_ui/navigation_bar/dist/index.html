@@ -2,41 +2,24 @@
 <html>
 <head>
   <meta charset="utf8">
-  <title>Academy - Navigation Bar</title>
+  <title>AppGyver Academy: Navigation Bar</title>
 
-  <link rel="stylesheet" href="/stylesheets/ratchet-steroids.css" />
-  <link rel="stylesheet" href="/stylesheets/application.css" />
+  <link rel="stylesheet" href="vendor/topcoat/css/topcoat-mobile-light.css" />
+  <link rel="stylesheet" href="stylesheets/application.css" />
 
-  <script src="/javascripts/onerror.js"></script>
+  <script src="javascripts/onerror.js"></script>
 
-  <script src="/appgyver/cordova.js"></script>
-  <script src="/components/steroids-js/steroids.js"></script>
+  <!-- cordova.js is served from localhost to ensure the correct version -->
+  <script src="http://localhost/appgyver/cordova.js"></script>
+  <script src="components/steroids-js/steroids.js"></script>
 
-  <script src="/javascripts/application.js"></script>
+  <script src="javascripts/application.js"></script>
 </head>
 <body>
-  <script type="text/javascript">
-    steroids.view.navigationBar.show("Phoenix Foundation");
-    
-    var rightButton = new steroids.buttons.NavigationBarButton();
-    rightButton.title = "Log in";
-    rightButton.onTap = function() {
-      alert("Angus M. logged in!");
-      steroids.view.navigationBar.setButtons({
-        right: null
-      });
-    };
-
-    steroids.view.navigationBar.setButtons({
-      right: [rightButton]
-    });
-    
-  </script>
-  
   <div class="content-padded">
-
-    <h1>Welcome to Phoenix Foundation intra!</h1>
-
+  
+    <h2 id="login-text">Please log in.</h2>
+    
   </div>
 </body>
 </html>
