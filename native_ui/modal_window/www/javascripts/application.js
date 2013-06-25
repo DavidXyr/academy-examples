@@ -1,3 +1,9 @@
+function showModal() {
+  var webView = new steroids.views.WebView("modal.html");
+  steroids.modal.show(webView);
+}
 
-// steroids.view.navigationBar.show("Hello World");
-
+function previewDolanImage() {
+  var fileView = new steroids.views.PreviewFileView("images/dolan.png");
+  steroids.modal.show(fileView);
+}
