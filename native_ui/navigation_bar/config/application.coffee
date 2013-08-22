@@ -8,7 +8,7 @@
 #
 # to create a cloud-deployed build of your app.
 
-steroids.config.name = "AppGyver Academy: Navigation Bar"
+steroids.config.name = "Steroids Academy: Navigation Bar"
 
 # -- Location: steroids.config.location --
 # Defines the location of the HTML document that Steroids will load when your app starts.
@@ -107,6 +107,11 @@ steroids.config.statusBar.enabled = true
 #
 # steroids.config.editor.cmd = "subl"
 # steroids.config.editor.args = ["."]
+
+# -- Watcher --
+
+# When using `steroids connect --watch` you can exclude directories/files using this:
+# steroids.config.watch.exclude = ["www/my_excluded_file.js", "www/my_excluded_dir"]
 
 # -- Pre- and post-build hooks --
 # Run your own build commands before and after Steroids builds your app. The arguments are always given as an array.
