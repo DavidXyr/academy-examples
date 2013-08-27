@@ -53,7 +53,7 @@ steroids.config.tabBar.tabs = [
     location: "http://localhost/views/uiColors/index.html"
   },
   {
-    title: "Internet"
+    title: "Second"
     icon: "icons/telescope@2x.png"
     location: "http://localhost/views/uiColors/secondTab.html"
   }
